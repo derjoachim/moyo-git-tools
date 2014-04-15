@@ -9,13 +9,17 @@
 # -n is the chicken mode. This corresponds to the -n option for rsync.
 # -r REVISION updates the chosen branch to revision REVISION. Implies -s
 # -t Updates (or downgrades) to TAG.
+# Note: this script will only work up to Nooku server versions up to 12.X. Newer versions have been moved to a git repo.
+# Also: use at own risk.
 if [ $# -eq 0 ] ; then
 	echo "Usage: $0 PROJECTNAME -b BRANCH -h -r REVISION -t TAG"
 	exit 1
 fi
 
+# The source subdirectory contains a Subversion dump
 REPOSRC=~/repos/nooku/server
-PRJFOLDER=~/Projecten/$1/
+# The destination subdirectory
+PRJFOLDER=~/www/$1/
 
 # SVN options
 REVISION=0
@@ -50,11 +54,11 @@ fi
 echo "Check whether the right folders exist."
 if [ ! -d "$REPOSRC" ]; then
 	echo "Error: the repository or branch $REPOSRC does not exist."
-	exit 0
+	exit 1
 fi
 if [ -d "$PRJFOLDER" ]; then
 	echo "Error: the project subdirectory $PRJFOLDER already exists. Therefore, I will gracefully exit."
-	exit 0
+	exit 1
 fi
 
 # 1. Export the repo into the temporary folder. 

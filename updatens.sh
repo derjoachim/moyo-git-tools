@@ -8,14 +8,20 @@
 # -n is the chicken mode. This corresponds to the -n option for rsync.
 # -r REVISION updates the chosen branch to revision REVISION. Implies -s
 # -t Updates (or downgrades) to TAG.
+
+# Note: this script only supports nooku server versions up to 12.2. Newer versions are in a git repo.
+# Also: use at own risk.
 if [ $# -eq 0 ] ; then
 	echo "Usage: $0 PROJECTNAME -b BRANCH -h -n -r REVISION -t TAG"
 	exit 1
 fi
 
+# Temporary subversion dump directory
 REPOSRC=~/repos/nooku/server
-TMPFOLDER=~/Upload/nookuservertemp/
-PRJFOLDER=~/Projecten/$1/
+# Yet another temporary directory
+TMPFOLDER=~/tmp/nookuservertemp/
+# Destination directory that already contains an existing project
+PRJFOLDER=~/www/$1/
 
 # SVN options
 REVISION=0
