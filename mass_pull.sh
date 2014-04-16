@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# J. van de Haterd, Moyo Web Architects
+# 20140414 Joachim van de Haterd, Moyo Web Architects
 #
 # At Moyo, we use a lot of repos that we share among projects. These are symlinked by a shell script.
 # This script enables us to check (and optionally pull) all repos from a shared project, instead of manually checking each little repository.
