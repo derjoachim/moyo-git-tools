@@ -12,7 +12,7 @@ ALLREPOS=()
 PROJECTS=()
 REPOS=()
 FORCE_ALL=0
-PKG_TYPES=(component libraries media modules plugins)
+PKG_TYPES=(component libraries media modules plugin)
 
 # 
 # Function declarations
@@ -28,13 +28,17 @@ symlinker() {
 	if [[ -d $src  && ! -L $dest ]] ; then
 		# If SRC is a directory
 		if [[ ! -d $dest || $FORCE_ALL -eq 1 ]] ; then
-			echo -e "Trying to symlink directory $src to $dest"
-			ln -sf $src $dest
+			if [ $VERBOSITY -eq 1 ] ; then
+				echo -e "Trying to symlink directory $src to $dest"
+			fi
+			ln -sfn $src $dest
 		fi
 	elif [[ -f $src && ! -L $dest && ! -L $dest ]] ; then
 		# If SRC is a file
 		if [[ ! -f $dest || $FORCE_ALL -eq 1 ]] ; then
-			echo -e  "Trying to symlink file $src to $dest"
+			if [ $VERBOSITY -eq 1 ] ; then
+				echo -e  "Trying to symlink file $src to $dest"
+			fi
 			ln -sfn $src $dest
 		fi
 	fi
@@ -156,7 +160,7 @@ while [ "$idx" -lt "$numrepos" ] ; do
 							dirname="$(basename "${path}")"
 							symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/$pkgtype/$dirname"
 						done;
-						if [ -f "$SRCDIR/$pkgtype/pkg_${REPOS[$idx]}.xml"] ; then
+						if [ -f "$SRCDIR/$pkgtype/pkg_${REPOS[$idx]}.xml" ] ; then
 							symlinker "$SRCDIR/$pkgtype/pkg_${REPOS[$idx]}.xml" "$WD/administrator/manifests/libraries/${REPOS[$idx]}.xml"
 						fi
 						;;
@@ -176,10 +180,13 @@ while [ "$idx" -lt "$numrepos" ] ; do
 							symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/modules/$dirname"
 						done
 						;;
-					"plugins")
-						echo "Plugins foundin $SRCDIR/$pkgtype/. You're screwed!"
-						# @TODO: Read the manifest, determine the plugin type and determine the correct subdirectory to place stuff in.
-						# symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/plugins/$plugintype/$dirname
+					"plugin")
+						echo "Plugin found in $SRCDIR/$pkgtype/"
+						if [ -f "$SRCDIR/$pkgtype/${REPOS[$idx]}.xml" ] ; then
+							#echo "Correct plugin file found. Trying to parse the plugin type."
+							plugintype=`sed -n '/group/s/\(.*group=\)\(.*\)/\2/p' $SRCDIR/$pkgtype/${REPOS[$idx]}.xml|awk -F\" '{print $2}'`
+							symlinker "$SRCDIR/$pkgtype" "$WD/plugins/$plugintype/${REPOS[$idx]}"
+						fi
 						;;
 					*)
 						echo "Zoinks! I hope that's just Scoob behind me (hint. It isn't)"
