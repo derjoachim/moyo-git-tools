@@ -47,6 +47,7 @@ if [[ ! -d $PROJECT_DIR ]] ; then
 	exit 1
 fi
 cd $PROJECT_DIR
+find . -name ‘*.DS_Store’ -type f -delete
 
 # Check all subdirectories for git repos
 # If a repo is found, try to determine whether anything needs to be done. Otherwise, just print a message and move on
