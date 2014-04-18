@@ -5,7 +5,7 @@
 # 
 
 # Variables. Please tweak as necessary
-PROJECT_DIR=~/www
+PROJECT_DIR=/var/www
 WD=`pwd`
 VERBOSITY=0
 ALLREPOS=()
@@ -14,6 +14,31 @@ REPOS=()
 FORCE_ALL=0
 PKG_TYPES=(component libraries media modules plugins)
 
+# 
+# Function declarations
+#
+# Autosymlink function
+# @param $1 SRC file
+# @param $2 DEST file
+# Tries to determine whether a symlink file is to be created. It'll do so if necessary. If not, it'll just exit.
+symlinker() {
+	local src=$1
+	local dest=$2
+
+	if [[ -d $src  && ! -L $dest ]] ; then
+		# If SRC is a directory
+		if [[ ! -d $dest || $FORCE_ALL -eq 1 ]] ; then
+			echo -e "Trying to symlink directory $src to $dest"
+			ln -sf $src $dest
+		fi
+	elif [[ -f $src && ! -L $dest && ! -L $dest ]] ; then
+		# If SRC is a file
+		if [[ ! -f $dest || $FORCE_ALL -eq 1 ]] ; then
+			echo -e  "Trying to symlink file $src to $dest"
+			ln -sfn $src $dest
+		fi
+	fi
+}
 
 # Arguments (@TODO):
 # -v Be verbose
@@ -103,101 +128,58 @@ while [ "$idx" -lt "$numrepos" ] ; do
 			if [ -d "$SRCDIR/$pkgtype" ] ; then
 				case $pkgtype in
 					"component")
-						echo "Component found"
-						if [[ -d "$SRCDIR/$pkgtype/administrator/components/com_${REPOS[$idx]}" && ! -L "$WD/administrator/components/com_${REPOS[$idx]}" ]] ; then
-							if [[ ! -d "$WD/administrator/components/com_${REPOS[$idx]}" || $FORCE_ALL -eq 1 ]] ; then
-								SRC="$SRCDIR/$pkgtype/administrator/components/com_${REPOS[$idx]}"
-								DEST="$WD/administrator/components/com_${REPOS[$idx]}"
-								echo "Trying to symlink $SRC to $DEST"
-								ln -sf $SRC $DEST
-							fi
-						fi
-						if [[ -d "$SRCDIR/$pkgtype/components/com_${REPOS[$idx]}" && ! -L "$WD/components/com_${REPOS[$idx]}" ]] ; then
-							if [[ ! -d "$WD/components/com_${REPOS[$idx]}" || $FORCE_ALL -eq 1 ]] ; then
-								SRC="$SRCDIR/$pkgtype/components/com_${REPOS[$idx]}"
-								DEST="$WD/components/com_${REPOS[$idx]}"
-								echo "Trying to symlink $SRC to $DEST"
-								ln -sf $SRC $DEST
-							fi
-						fi
+						echo "Component found in $SRCDIR/$pkgtype/"
+						for path in $SRCDIR/$pkgtype/administrator/components/* ; do 
+							[ -d "${path}" ] || continue
+							dirname="$(basename "${path}")"
+							symlinker "$SRCDIR/$pkgtype/administrator/components/$dirname" "$WD/administrator/components/$dirname"
 
-						if [ ! -L "$WD/administrator/components/com_${REPOS[$idx]}.xml" ] ; then
-							if [[ ! -f "$WD/administrator/components/com_${REPOS[$idx]}.xml" || $FORCE_ALL -eq 1 ]] ; then
-								SRC="$SRCDIR/$pkgtype/com_${REPOS[$idx]}.xml"
-								DEST="$WD/administrator/components/com_${REPOS[$idx]}/com_${REPOS[$idx]}.xml"
-								echo "Trying to symlink $SRC to $DEST"
-								ln -sf $SRC $DEST
+							# Do not forget the .xml files
+							if [ -f  "$SRCDIR/$pkgtype/$dirname.xml" ] ; then
+								symlinker "$SRCDIR/$pkgtype/$dirname.xml" "$WD/administrator/components/$dirname/$dirname.xml"
 							fi
+						done;
+						for path in $SRCDIR/$pkgtype/components/* ; do 
+							[ -d "${path}" ] || continue
+							dirname="$(basename "${path}")"
+							symlinker "$SRCDIR/$pkgtype/components/$dirname" "$WD/components/$dirname"
+						done;
+						# This is a loose cannon. Fortunately, the proper checks are in place.
+						if [ -f "$SRCDIR/$pkgtype/${REPOS[$idx]}.xml" ] ; then
+							symlinker "$SRCDIR/$pkgtype/${REPOS[$idx]}.xml" "$WD/administrator/components/com_${REPOS[$idx]}/${REPOS[$idx]}.xml"
 						fi
-						if [[ -f "$SRCDIR/$pkgtype/${REPOS[$idx]}.xml" || ! -L "$WD/administrator/components/${REPOS[$idx]}.xml" ]] ; then
-							if [[ ! -f "$WD/administrator/components/${REPOS[$idx]}.xml" || $FORCE_ALL -eq 1 ]] ; then
-								SRC="$SRCDIR/$pkgtype/${REPOS[$idx]}.xml"
-								DEST="$WD/administrator/components/${REPOS[$idx]}/${REPOS[$idx]}.xml"
-								echo "Trying to symlink $SRC to $DEST"
-								ln -sf $SRC $DEST
-							fi
-						fi
-
 						;;
 					"libraries")
-						echo "Libraries found"
-						if [[ -d "$SRCDIR/$pkgtype/libraries/${REPOS[$idx]}" && ! -L "$WD/libraries/${REPOS[$idx]}" ]] ; then
-							if [[ ! -d "$WD/libraries/${REPOS[$idx]}" || $FORCE_ALL -eq 1 ]] ; then
-								SRC="$SRCDIR/$pkgtype/libraries/${REPOS[$idx]}"
-								DEST="$WD/libraries/${REPOS[$idx]}"
-								echo "Trying to symlink $SRC to $DEST"
-								ln -sf $SRC $DEST
-							fi
+						echo "Libraries found in $SRCDIR/$pkgtype/"
+						for path in $SRCDIR/$pkgtype/* ; do 
+							[ -d "${path}" ] || continue
+							dirname="$(basename "${path}")"
+							symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/$pkgtype/$dirname"
+						done;
+						if [ -f "$SRCDIR/$pkgtype/pkg_${REPOS[$idx]}.xml"] ; then
+							symlinker "$SRCDIR/$pkgtype/pkg_${REPOS[$idx]}.xml" "$WD/administrator/manifests/libraries/${REPOS[$idx]}.xml"
 						fi
-						if [ ! -L "$WD/administrator/manifests/libraries/${REPOS[$idx]}.xml" ] ; then
-							if [[ ! -f "$WD/administrator/manifests/libraries/${REPOS[$idx]}.xml" || $FORCE_ALL -eq 1 ]] ; then
-								SRC="$SRCDIR/$pkgtype/pkg_${REPOS[$idx]}.xml"
-								DEST="$WD/administrator/manifests/libraries/${REPOS[$idx]}.xml"
-								echo "Trying to symlink $SRC to $DEST"
-								ln -sf $SRC $DEST
-							fi
-						fi
-
 						;;
 					"media")
-						echo "Media found"
-						if [[ -d "$SRCDIR/$pkgtype/com_${REPOS[$idx]}" && ! -L "$WD/com_${REPOS[$idx]}" ]] ; then
-							if [[ ! -d "$WD/com_${REPOS[$idx]}" || $FORCE_ALL -eq 1 ]] ; then
-								SRC="$SRCDIR/$pkgtype/com_${REPOS[$idx]}"
-								DEST="$WD/com_${REPOS[$idx]}"
-								echo "Trying to symlink $SRC to $DEST"
-								ln -sf $SRC $DEST
-							fi
-						fi
-						if [[ -d "$SRCDIR/$pkgtype/mod_${REPOS[$idx]}" && ! -L "$WD/mod_${REPOS[$idx]}" ]] ; then
-							if [[ ! -d "$WD/mod_${REPOS[$idx]}" || $FORCE_ALL -eq 1 ]] ; then
-								SRC="$SRCDIR/$pkgtype/mod_${REPOS[$idx]}"
-								DEST="$WD/mod_${REPOS[$idx]}"
-								echo "Trying to symlink $SRC to $DEST"
-								ln -sf $SRC $DEST
-							fi
-						fi
+						echo "Media found in $SRCDIR/$pkgtype/"
+						for path in $SRCDIR/$pkgtype/* ; do 
+							[ -d "${path}" ] || continue
+							dirname="$(basename "${path}")"
+							symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/$pkgtype/$dirname"
+						done;
 						;;
-
 					"modules")
 						echo "Modules found in $SRCDIR/$pkgtype/"
 						for path in $SRCDIR/$pkgtype/* ; do 
 							[ -d "${path}" ] || continue
 							dirname="$(basename "${path}")"
-							echo $dirname;
-								if [ ! -L "$WD/modules/$dirname" ] ; then
-								if [[ ! -d "$WD/modules/$dirname" || $FORCE_ALL -eq 1 ]] ; then
-									SRC="$SRCDIR/$pkgtype/$dirname"
-									DEST="$WD/modules/$dirname"
-									echo "Trying to symlink $SRC to $DEST"
-									ln -sf $SRC $DEST
-								fi
-							fi
+							symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/modules/$dirname"
 						done
 						;;
 					"plugins")
-						echo "Plugins found. You're screwed!"
+						echo "Plugins foundin $SRCDIR/$pkgtype/. You're screwed!"
 						# @TODO: Read the manifest, determine the plugin type and determine the correct subdirectory to place stuff in.
+						# symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/plugins/$plugintype/$dirname
 						;;
 					*)
 						echo "Zoinks! I hope that's just Scoob behind me (hint. It isn't)"
@@ -206,17 +188,14 @@ while [ "$idx" -lt "$numrepos" ] ; do
 			fi
 		done
 		# Try to simlink pkg_blah.xml
-		if [ ! -L "$WD/administrator/manifests/packages/pkg_${REPOS[$idx]}.xml" ] ; then
-			if [[ ! -f "$WD/administrator/manifests/packages/pkg_${REPOS[$idx]}.xml" || $FORCE_ALL -eq 1 ]] ; then
-				SRC="$SRCDIR/pkg_${REPOS[$idx]}.xml"
-				DEST="$WD/administrator/manifests/packages/pkg_${REPOS[$idx]}.xml"
-				echo "Trying to symlink $SRC to $DEST"
-				ln -sf $SRC $DEST
-			fi
+		if [ -f  "$SRCDIR/pkg_${REPOS[$idx]}.xml" ] ; then
+			symlinker "$SRCDIR/pkg_${REPOS[$idx]}.xml" "$WD/administrator/manifests/packages/pkg_${REPOS[$idx]}.xml"
 		fi
+	else
+		# @TODO: We're currently in a single component or module. Do the symlink thingy
+		echo "TODO : $PROJECT_DIR/${PROJECTS[$idx]}/${REPOS[$idx]}"
 	fi
 
-	# @TODO: We're currently in a single component or module. Do the symlink thingy
 
 	let "idx=$idx+1"
 done
