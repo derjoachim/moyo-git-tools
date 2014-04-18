@@ -2,11 +2,11 @@
 
 # Read a composer.json file, parse the dependencies and create correct symlinks in the current project folder
 # Obviously, this file needs to be run from a web project root directory. There MUST be a composer.json file.
-# 
+# This currently only works for Joomla! projects.
 
 # Variables. Please tweak as necessary
 PROJECT_DIR=/var/www
-WD=`pwd`
+WD=`pwd` # @TODO: Make this more idiot proof.
 VERBOSITY=0
 ALLREPOS=()
 PROJECTS=()
@@ -14,8 +14,37 @@ REPOS=()
 FORCE_ALL=0
 PKG_TYPES=(component libraries media modules plugin)
 
+#
+# Setting parameters.
+#
+while getopts fhv opt
+do
+    case "$opt" in
+		f) echo "--- Force all enabled ---";FORCE_ALL=1;;
+    	h)  
+		echo "This command will parse the composer.json file and automatically create the correct symlinks if possible."
+		echo
+		echo "f : Uses the Force, Luke. All links will be forced, thus overwriting earlier links, files or directories. Use with care."
+	  	echo "h : Print this help message."
+		echo "v : Be more verbose by showing a message for each subdirectory"
+		exit 0;;
+		v) echo "--- Verbosity mode on. You asked for it. ---";VERBOSITY=1;;
+    	\?) echo >&2 "usage: $0 [-f] [-h] [-v]";exit 1;;
+	esac
+done
+
+shift `expr $OPTIND - 1`
+
 # 
 # Function declarations
+#
+# Verbosity function. 
+# If the -v option has been chosen, do a echo. Otherwise, just be silent.
+debugln() {
+	if [ $VERBOSITY -eq 1 ] ; then
+		echo -e $1
+	fi
+}
 #
 # Autosymlink function
 # @param $1 SRC file
@@ -28,25 +57,17 @@ symlinker() {
 	if [[ -d $src  && ! -L $dest ]] ; then
 		# If SRC is a directory
 		if [[ ! -d $dest || $FORCE_ALL -eq 1 ]] ; then
-			if [ $VERBOSITY -eq 1 ] ; then
-				echo -e "Trying to symlink directory $src to $dest"
-			fi
+			debugln "Trying to symlink directory $src to $dest"
 			ln -sfn $src $dest
 		fi
 	elif [[ -f $src && ! -L $dest && ! -L $dest ]] ; then
 		# If SRC is a file
 		if [[ ! -f $dest || $FORCE_ALL -eq 1 ]] ; then
-			if [ $VERBOSITY -eq 1 ] ; then
-				echo -e  "Trying to symlink file $src to $dest"
-			fi
+			debugln "Trying to symlink file $src to $dest"
 			ln -sfn $src $dest
 		fi
 	fi
 }
-
-# Arguments (@TODO):
-# -v Be verbose
-# -h Print a help file
 
 # First, let us run some tests. 
 # 1. Is there a composer.json file in the current directory?
@@ -83,10 +104,7 @@ while IFS= read -r line; do
 	REPOS+=("$(echo $URL | cut -d \/ -f 4 | cut -d \. -f 2)")
 done <<< "$(cat composer.json | JSON.sh -b | egrep '\"url\"\]')"
 
-if [ $VERBOSITY -eq 1 ] ; then
-	echo
-	echo "${#ALLREPOS[@]} repositories to be parsed." 
-fi
+debugln  "${#ALLREPOS[@]} repositories to be parsed."
 
 # Third step: check whether shared repos are cloned. 
 # If they are, ok. If not, either warn or automatically clone.
@@ -103,14 +121,12 @@ while [ "$idx" -lt "$numrepos" ] ; do
 	if [ ! -d ${REPOS[$idx]} ] ; then
 		echo -e "Creating repository directory  \033[32m${REPOS[$idx]}\033[0m."
 		mkdir  ${REPOS[$idx]}
-		if [ "$FORCE_CLONING" -eq 1 ] ; then
+		if [ "$FORCE_ALL" -eq 1 ] ; then
 			echo -e "Cloning new repository \033[33m${ALLREPOS[$idx]}\033[0m."
 			git clone ${ALLREPOS[$idx]} ${REPOS[$idx]}
 		fi
 	else
-		if [ $VERBOSITY -eq 1 ] ; then
-			echo -e "Repository \033[1m${REPOS[$idx]}\033[0m found."
-		fi
+		debugln "Repository \033[1m${REPOS[$idx]}\033[0m found."
 	fi
 
 	cd ..
@@ -132,7 +148,7 @@ while [ "$idx" -lt "$numrepos" ] ; do
 			if [ -d "$SRCDIR/$pkgtype" ] ; then
 				case $pkgtype in
 					"component")
-						echo "Component found in $SRCDIR/$pkgtype/"
+						debugln "\033[1mComponent\033[0m found in $SRCDIR/$pkgtype/"
 						for path in $SRCDIR/$pkgtype/administrator/components/* ; do 
 							[ -d "${path}" ] || continue
 							dirname="$(basename "${path}")"
@@ -148,13 +164,12 @@ while [ "$idx" -lt "$numrepos" ] ; do
 							dirname="$(basename "${path}")"
 							symlinker "$SRCDIR/$pkgtype/components/$dirname" "$WD/components/$dirname"
 						done;
-						# This is a loose cannon. Fortunately, the proper checks are in place.
 						if [ -f "$SRCDIR/$pkgtype/${REPOS[$idx]}.xml" ] ; then
 							symlinker "$SRCDIR/$pkgtype/${REPOS[$idx]}.xml" "$WD/administrator/components/com_${REPOS[$idx]}/${REPOS[$idx]}.xml"
 						fi
 						;;
 					"libraries")
-						echo "Libraries found in $SRCDIR/$pkgtype/"
+						debugln "\033[1mLibraries\033[0m found in $SRCDIR/$pkgtype/"
 						for path in $SRCDIR/$pkgtype/* ; do 
 							[ -d "${path}" ] || continue
 							dirname="$(basename "${path}")"
@@ -165,7 +180,7 @@ while [ "$idx" -lt "$numrepos" ] ; do
 						fi
 						;;
 					"media")
-						echo "Media found in $SRCDIR/$pkgtype/"
+						debugln "\033[1mMedia\033[0m found in $SRCDIR/$pkgtype/"
 						for path in $SRCDIR/$pkgtype/* ; do 
 							[ -d "${path}" ] || continue
 							dirname="$(basename "${path}")"
@@ -173,7 +188,7 @@ while [ "$idx" -lt "$numrepos" ] ; do
 						done;
 						;;
 					"modules")
-						echo "Modules found in $SRCDIR/$pkgtype/"
+						debugln "\033[1mModules\033[0m found in $SRCDIR/$pkgtype/"
 						for path in $SRCDIR/$pkgtype/* ; do 
 							[ -d "${path}" ] || continue
 							dirname="$(basename "${path}")"
@@ -181,15 +196,14 @@ while [ "$idx" -lt "$numrepos" ] ; do
 						done
 						;;
 					"plugin")
-						echo "Plugin found in $SRCDIR/$pkgtype/"
+						debugln "\033[1mPlugin\033[0m found in $SRCDIR/$pkgtype/"
 						if [ -f "$SRCDIR/$pkgtype/${REPOS[$idx]}.xml" ] ; then
-							#echo "Correct plugin file found. Trying to parse the plugin type."
 							plugintype=`sed -n '/group/s/\(.*group=\)\(.*\)/\2/p' $SRCDIR/$pkgtype/${REPOS[$idx]}.xml|awk -F\" '{print $2}'`
 							symlinker "$SRCDIR/$pkgtype" "$WD/plugins/$plugintype/${REPOS[$idx]}"
 						fi
 						;;
 					*)
-						echo "Zoinks! I hope that's just Scoob behind me (hint. It isn't)"
+						echo "\033[1mZoinks\033[0m! I hope that's just Scoob behind me (hint. It isn't)"
 						;;
 				esac;
 			fi
@@ -200,12 +214,12 @@ while [ "$idx" -lt "$numrepos" ] ; do
 		fi
 	else
 		# @TODO: We're currently in a single component or module. Do the symlink thingy
+		# Not very DRY, but it'll do for the moment.
 		echo "TODO : $PROJECT_DIR/${PROJECTS[$idx]}/${REPOS[$idx]}"
 	fi
-
 
 	let "idx=$idx+1"
 done
 
-echo "We done"
+echo -e "\033[36mDone\033[0m! All symlinks appear to be in place."
 exit 0;
