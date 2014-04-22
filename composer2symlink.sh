@@ -13,7 +13,7 @@ PROJECTS=()
 REPOS=()
 FORCE_ALL=0
 PKG_TYPES=(component libraries media modules plugin)
-
+SUBDIR_TYPES=(components media modules)
 #
 # Setting parameters.
 #
@@ -138,12 +138,12 @@ done
 cd $WD
 idx=0
 while [ "$idx" -lt "$numrepos" ] ; do
-	# Sometimes a repo is a package (e.g. a module and a component
+	# Sometimes a repo is a package (e.g. a module and a component)
 	SRCDIR="$PROJECT_DIR/${PROJECTS[$idx]}/${REPOS[$idx]}"
 
 	if [ -d $PROJECT_DIR/${PROJECTS[$idx]}/${REPOS[$idx]}/packages ] ; then
 		SRCDIR+="/packages"
-		echo -e "${PROJECTS[$idx]} - ${REPOS[$idx]} \033[33mPackages subdirectory found\033[0m."
+		echo -e "${PROJECTS[$idx]} - \033[32m${REPOS[$idx]}\033[0m \033[33mPackages subdirectory found\033[0m."
 		for pkgtype in ${PKG_TYPES[@]} ; do
 			if [ -d "$SRCDIR/$pkgtype" ] ; then
 				case $pkgtype in
@@ -213,9 +213,35 @@ while [ "$idx" -lt "$numrepos" ] ; do
 			symlinker "$SRCDIR/pkg_${REPOS[$idx]}.xml" "$WD/administrator/manifests/packages/pkg_${REPOS[$idx]}.xml"
 		fi
 	else
-		# @TODO: We're currently in a single component or module. Do the symlink thingy
+		# We're currently in a single component or module. Do the symlink thingy
 		# Not very DRY, but it'll do for the moment.
-		echo "TODO : $PROJECT_DIR/${PROJECTS[$idx]}/${REPOS[$idx]}"
+		echo -e "${PROJECTS[$idx]} - \033[32m${REPOS[$idx]}\033[0m \033[33mComponent not in package. Installing manually\033[0m."
+
+		# administrator/components
+		if [ -d "$SRCDIR/administrator/components" ] ; then
+			debugln "\033[1mAdministrator\033[0m found in $SRCDIR/$pkgtype/"
+			for path in $SRCDIR/administrator/components/* ; do 
+				[ -d "${path}" ] || continue
+				dirname="$(basename "${path}")"
+				symlinker "$SRCDIR/administrator/components/$dirname" "$WD/administrator/components/$dirname"
+
+				# Do not forget the .xml files
+				if [ -f  "$SRCDIR/$dirname.xml" ] ; then
+					symlinker "$SRCDIR/$dirname.xml" "$WD/administrator/components/$dirname/$dirname.xml"
+				fi
+			done
+		fi
+		# The rest is somewhat easier
+		for pkgtype in ${SUBDIR_TYPES[@]} ; do
+			if [ -d "$SRCDIR/$pkgtype" ] ; then
+				debugln "\033[1m$pkgtype\033[0m found in $SRCDIR/$pkgtype/"
+				for path in $SRCDIR/$pkgtype/* ; do 
+					[ -d "${path}" ] || continue
+					dirname="$(basename "${path}")"
+					symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/$pkgtype/$dirname"
+				done
+			fi
+		done
 	fi
 
 	let "idx=$idx+1"
