@@ -54,17 +54,32 @@ symlinker() {
 	local src=$1
 	local dest=$2
 
+	# First, try to force deletion of existing symlinks, files or directories
+	if [ $FORCE_ALL -eq 1 ] ; then
+		if [ -d $dest ] ; then
+			debugln "Removing destination directory $dest"
+			rm -rf $dest
+		elif [ -L $dest ] ; then
+			debugln "Removing symlink $dest"
+			rm -f $dest
+		elif [ -f $dest ] ; then
+			debugln "Removing regular file $dest"
+			rm -f $dest
+		fi
+	fi
+
+
 	if [[ -d $src  && ! -L $dest ]] ; then
 		# If SRC is a directory
-		if [[ ! -d $dest || $FORCE_ALL -eq 1 ]] ; then
+		if [[ ! -d $dest && ! -L  $dest ]] ; then
 			debugln "Trying to symlink directory $src to $dest"
-			ln -sfn $src $dest
+			ln -sf "$src" "$dest"
 		fi
-	elif [[ -f $src && ! -L $dest && ! -L $dest ]] ; then
+	elif [[ -f $src && ! -L $dest ]] ; then
 		# If SRC is a file
-		if [[ ! -f $dest || $FORCE_ALL -eq 1 ]] ; then
+		if [[ ! -f $dest && ! -L $dest ]] ; then
 			debugln "Trying to symlink file $src to $dest"
-			ln -sfn $src $dest
+			ln -sf "$src" "$dest"
 		fi
 	fi
 }
@@ -243,6 +258,7 @@ while [ "$idx" -lt "$numrepos" ] ; do
 			fi
 		done
 	fi
+	debugln "---"
 
 	let "idx=$idx+1"
 done
