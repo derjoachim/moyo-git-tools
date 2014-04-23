@@ -8,7 +8,7 @@ Moyo Web Architects currently works with shared git repositories, i.e. repositor
 
 The `mass_update.sh` script enters a local subdirectory that has all the shared repositories and iterates through the subdirectories. Per subdirectory, it gives a status (and later) the option to perform certain actions within the script, like pulling.
 
-The `composer2symlink.sh` script parses a composer.json file. It retrieves all required assembla repositories, clones them if necessary and adds symlinks. You can optionally force symlinks. One word of warning though: please make sure that the symlinks are readable by the web server. MAMP users will not have this problem, but when you use a VM, please make sure that the symlinks are created using a path readable by your webserver.
+The `jsymlinker.sh` script parses a composer.json file. It retrieves all required assembla repositories, clones them if necessary and adds symlinks. You can optionally force symlinks. One word of warning though: please make sure that the symlinks are readable by the web server. MAMP users will not have this problem, but when you use a VM, please make sure that the symlinks are created using a path readable by your webserver.
 
 Early Nooku repository scripts
 ------------------------------
