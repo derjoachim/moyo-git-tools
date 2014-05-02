@@ -67,17 +67,20 @@ symlinker() {
 			rm -f $dest
 		fi
 	fi
-
-
 	if [[ -d $src  && ! -L $dest ]] ; then
-		# If SRC is a directory
-		if [[ ! -d $dest && ! -L  $dest ]] ; then
+		# If SRC is a directory...
+		if [ -d $dest ] ; then
+			# Destination is a directory, thus is part of the main project. A warning should be given, because the developer is possibly working in the wrong repository.
+			echo -e "\033[31mWarning\033[0m: The subdirectory $dest appears to be part of the main project. Please fix manually."
+		elif [ ! -L  $dest ] ; then
 			debugln "Trying to symlink directory $src to $dest"
 			ln -sf "$src" "$dest"
 		fi
 	elif [[ -f $src && ! -L $dest ]] ; then
-		# If SRC is a file
-		if [[ ! -f $dest && ! -L $dest ]] ; then
+		# If SRC is a file...
+		if [ -f $dest ] ; then
+			echo -e "\033[31mWarning\033[0m: The file $dest appears to be part of the main project. Please fix manually."
+		elif [ ! -L $dest ] ; then
 			debugln "Trying to symlink file $src to $dest"
 			ln -sf "$src" "$dest"
 		fi
@@ -99,7 +102,6 @@ if [ ! $(type -p JSON.sh) ] ; then
 fi
 
 # 3: Is it a Joomla! project? :-)
-# @TODO: add more types of projects, e.g. Nooku
 if [ ! -d ./libraries/joomla ] ; then
 	echo -e "You are not in a joomla project. Therefore, this script will be useless."
 	exit 1
