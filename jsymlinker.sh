@@ -232,11 +232,11 @@ while [ "$idx" -lt "$numrepos" ] ; do
 	else
 		# We're currently in a single component or module. Do the symlink thingy
 		# Not very DRY, but it'll do for the moment.
-		echo -e "${PROJECTS[$idx]} - \033[32m${REPOS[$idx]}\033[0m \033[33mComponent not in package. Installing manually\033[0m."
+		echo -e "${PROJECTS[$idx]} - \033[32m${REPOS[$idx]}\033[0m \033[33mComponent not in package.\033[0m."
 
 		# administrator/components
 		if [ -d "$SRCDIR/administrator/components" ] ; then
-			debugln "\033[1mAdministrator\033[0m found in $SRCDIR/$pkgtype/"
+			debugln "\033[1mAdministrator\033[0m found in $SRCDIR/"
 			for path in $SRCDIR/administrator/components/* ; do 
 				[ -d "${path}" ] || continue
 				dirname="$(basename "${path}")"
