@@ -138,10 +138,8 @@ while [ "$idx" -lt "$numrepos" ] ; do
 	if [ ! -d ${REPOS[$idx]} ] ; then
 		echo -e "Creating repository directory  \033[32m${REPOS[$idx]}\033[0m."
 		mkdir  ${REPOS[$idx]}
-		if [ "$FORCE_ALL" -eq 1 ] ; then
-			echo -e "Cloning new repository \033[33m${ALLREPOS[$idx]}\033[0m."
-			git clone ${ALLREPOS[$idx]} ${REPOS[$idx]}
-		fi
+		echo -e "Cloning new repository \033[33m${ALLREPOS[$idx]}\033[0m."
+		git clone ${ALLREPOS[$idx]} ${REPOS[$idx]}
 	else
 		debugln "Repository \033[1m${REPOS[$idx]}\033[0m found."
 	fi
