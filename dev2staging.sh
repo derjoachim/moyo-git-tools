@@ -56,4 +56,7 @@ if [ $KEEP_ORPHANS -eq 0 ] ; then
 	RSYNCOPT+=" --delete"
 fi
 
-rsync $RSYNCOPT --delete --exclude='.git' --exclude='/.gitignore' --exclude='/copy.sh' --exclude='/symlinker.sh' --exclude='/configuration.php' --exclude='/composer.lock' --exclude='/administrator/cache' --exclude='/joomlatools-files' --exclude='/cache' --exclude='/logs' --exclude='/images' --exclude='/tmp' --exclude='/vendor' $SRC/ $DEST/
+echo "Removing pesky .DS_Store files."
+find . -name *.DS_Store -type f -delete
+
+rsync $RSYNCOPT --delete --exclude='.git' --exclude='/.idea' --exclude='/.gitignore' --exclude='/copy.sh' --exclude='/symlinker.sh' --exclude='/configuration.php' --exclude='/composer.lock' --exclude='/administrator/cache' --exclude='/joomlatools-files' --exclude='/cache' --exclude='/logs' --exclude='/images' --exclude='/tmp' --exclude='/vendor' $SRC/ $DEST/
