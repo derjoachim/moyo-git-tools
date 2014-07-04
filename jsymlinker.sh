@@ -5,6 +5,9 @@
 # This currently only works for Joomla! projects.
 
 # Variables. Please tweak as necessary
+
+# @TODO: check for dead symlinks and remove when necessary
+
 PROJECT_DIR=/var/www
 WD=`pwd` # @TODO: Make this more idiot proof.
 VERBOSITY=0
@@ -142,15 +145,20 @@ while [ "$idx" -lt "$numrepos" ] ; do
 		git clone ${ALLREPOS[$idx]} ${REPOS[$idx]}
 	else
 		debugln "Repository \033[1m${REPOS[$idx]}\033[0m found."
+
+		#@TODO Automatic checkout of desired branch? Worth a discussion
 	fi
 
 	cd ..
 	let "idx=$idx+1"
 done
 
-# Forth step: check whether actually symlinked.
-# If not, either give a warning or force new symlinks.
+# Forth step: remove any dead symlinks
 cd $WD
+find . -type l -exec test ! -e {} \; -delete
+
+# Fifth step: check whether actually symlinked.
+# If not, either give a warning or force new symlinks.
 idx=0
 while [ "$idx" -lt "$numrepos" ] ; do
 	# Sometimes a repo is a package (e.g. a module and a component)
