@@ -6,27 +6,29 @@
 
 # Variables. Please tweak as necessary
 
-# @TODO: check for dead symlinks and remove when necessary
-
 PROJECT_DIR=/var/www
 WD=`pwd` # @TODO: Make this more idiot proof.
 VERBOSITY=0
 ALLREPOS=()
 PROJECTS=()
 REPOS=()
+FLUSH_ALL_SYMLINKS=0
 FORCE_ALL=0
 PKG_TYPES=(component libraries media modules plugin)
 SUBDIR_TYPES=(components media modules)
+FLUSH_SUBDIRS=(administrator components libraries media modules plugins)
 #
 # Setting parameters.
 #
-while getopts fhv opt
+while getopts dfhv opt
 do
     case "$opt" in
+		d) echo "--- Flush all symlinks ---";FLUSH_ALL_SYMLINKS=1;;
 		f) echo "--- Force all enabled ---";FORCE_ALL=1;;
     	h)  
 		echo "This command will parse the composer.json file and automatically create the correct symlinks if possible."
 		echo
+	  	echo "d : Removes all symlinks prior to parsing the composer.json file."
 		echo "f : Uses the Force, Luke. All links will be forced, thus overwriting earlier links, files or directories. Use with care."
 	  	echo "h : Print this help message."
 		echo "v : Be more verbose by showing a message for each subdirectory"
@@ -153,8 +155,27 @@ while [ "$idx" -lt "$numrepos" ] ; do
 	let "idx=$idx+1"
 done
 
-# Forth step: remove any dead symlinks
+# Forth step: Optionally flush all symlinks. Also, find and remove any dead symlinks
 cd $WD
+if [ $FLUSH_ALL_SYMLINKS -eq 1 ] ; then
+	# Iterate through all relevant subdirectories
+	for subdir in ${FLUSH_SUBDIRS[@]} ; do
+		debugln "Flushing subdirectory $WD/$subdir"
+		cd $WD/$subdir
+		if [ $VERBOSITY -eq 1 ]; then
+			find . -type l -print
+		fi
+
+		find . -type l -delete
+	done
+	# Find and remove symlinks within said subdirectories
+fi
+
+if [ $VERBOSITY -eq 1 ]; then
+	debugln "Finding dead symlinks."
+	find . -type l -exec test ! -e {} \; -print
+fi
+
 find . -type l -exec test ! -e {} \; -delete
 
 # Fifth step: check whether actually symlinked.
