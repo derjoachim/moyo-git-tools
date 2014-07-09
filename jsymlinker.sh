@@ -14,7 +14,7 @@ PROJECTS=()
 REPOS=()
 FLUSH_ALL_SYMLINKS=0
 FORCE_ALL=0
-PKG_TYPES=(component libraries media modules plugin)
+PKG_TYPES=(component libraries media modules plugin plugins)
 SUBDIR_TYPES=(components media modules)
 FLUSH_SUBDIRS=(administrator components libraries media modules plugins)
 #
@@ -120,7 +120,12 @@ fi
 
 # Second step: parse all assembla URLs from the JSON file
 while IFS= read -r line; do
+	# Old style composer.json: /source/type = git
 	URL=$(echo $line | cut -d \" -f 10)
+	if [ "$URL" = "" ] ; then
+		# New style composer.json: type = vcs
+		URL=$(echo $line | cut -d \" -f 6)
+	fi
 	ALLREPOS+=($URL)
 	PROJECTS+=("$(echo $URL | cut -d \/ -f 4 | cut -d \. -f 1)")
 	REPOS+=("$(echo $URL | cut -d \/ -f 4 | cut -d \. -f 2)")
@@ -245,6 +250,19 @@ while [ "$idx" -lt "$numrepos" ] ; do
 							plugintype=`sed -n '/group/s/\(.*group=\)\(.*\)/\2/p' $SRCDIR/$pkgtype/${REPOS[$idx]}.xml|awk -F\" '{print $2}'`
 							symlinker "$SRCDIR/$pkgtype" "$WD/plugins/$plugintype/${REPOS[$idx]}"
 						fi
+						;;
+					"plugins")
+						debugln "\033[1mPlugins new style \033[0m found in $SRCDIR/$pkgtype/"
+						# In the new repo structure, more than one plugins can be used. 
+						# Therefore, we need to iterate through subdirectories
+						for path in $SRCDIR/$pkgtype/* ; do 
+							[ -d "${path}" ] || continue
+							dirname="$(basename "${path}")"
+							if [ -f "$SRCDIR/$pkgtype/$dirname/${dirname}.xml" ] ; then
+								plugintype=`sed -n '/group/s/\(.*group=\)\(.*\)/\2/p' $SRCDIR/$pkgtype/$dirname/${dirname}.xml|awk -F\" '{print $2}'`
+								symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/plugins/$plugintype/$dirname"
+							fi
+						done
 						;;
 					*)
 						echo "\033[1mZoinks\033[0m! I hope that's just Scoob behind me (hint. It isn't)"
