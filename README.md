@@ -14,7 +14,7 @@ Early Nooku repository scripts
 ------------------------------
 
 A number of older projects use 0.7 and 12.X versions of the [Nooku Server](http://nooku.assembla.com) CMS. Since back in the day, these versions were in heavy development (and we like to swim with the sharks), I wrote a set of tools that created a local dump of the (then) SVN repo, and synced (or installed) the desired versoin.
-See [this post](http://moyoweb.nl/index.php/blog/2-nooku-news/15-how-to-sync-your-project-code-with-the-nooku-server-repository.html) for more information.
+See [this post](http://moyoweb.nl/en/component/articles/?view=article&id=12) for more information.
 
 The `updatens.sh` is used to update a certain project. The default behavior is to merely pull the latest revision, but you can specify revisions or even tags. Its sister script `preinstall_ns.sh` enables the developer to start a new Nooku Server project, again while being to distinguish among revisions and tags.
 
