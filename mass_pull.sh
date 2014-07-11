@@ -69,11 +69,11 @@ for f in *; do
 				# See whether anything needs to be pushed. 
 				echo -e "The \033[1m$f\033[0m repository has changes."
 				echo -e "\033[0;31mPlease commit and push manually\033[0m."
-			elif [ `git fetch origin;git rev-list HEAD..origin/master --count` != 0 ]; then
+			elif [[ `git fetch origin;git rev-list HEAD..origin/master --count` != '0' ]]; then
 				# See whether anything needs to be pulled
 				echo -e "The \033[1m$f\033[0m repository has remote changes."
 				if [ $AUTO_PULL -eq 1 ] ; then
-					git pull
+					git pull --all
 				else
 					echo -e "\033[0;33mPlease perform a pull manually\033[0m."
 				fi
