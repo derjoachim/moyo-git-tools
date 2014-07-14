@@ -34,7 +34,7 @@ do
 		echo "v : Be more verbose by showing a message for each subdirectory"
 		exit 0;;
 		v) echo "--- Verbosity mode on. You asked for it. ---";VERBOSITY=1;;
-    	\?) echo >&2 "usage: $0 [-f] [-h] [-v]";exit 1;;
+    	\?) echo >&2 "usage: $0 [-d] [-f] [-h] [-v]";exit 1;;
 	esac
 done
 
@@ -89,6 +89,18 @@ symlinker() {
 			debugln "Trying to symlink file $src to $dest"
 			ln -sf "$src" "$dest"
 		fi
+	fi
+}
+
+#
+# #7: Within installable Joomla packages, certain package types contain a media subdirectory. Make sure that these are properly symlinked as well
+# Note that this is only necessary for properly packaged repositories!
+media() {
+	local path=$1
+	dirname="$(basename "${path}")"
+
+	if [ -d "$path/media/$dirname" ]; then
+		symlinker "$path/media/$dirname" "$WD/media/$dirname"
 	fi
 }
 
@@ -210,6 +222,7 @@ while [ "$idx" -lt "$numrepos" ] ; do
 						done;
 						for path in $SRCDIR/$pkgtype/components/* ; do 
 							[ -d "${path}" ] || continue
+							media $path
 							dirname="$(basename "${path}")"
 							symlinker "$SRCDIR/$pkgtype/components/$dirname" "$WD/components/$dirname"
 						done;
@@ -222,6 +235,7 @@ while [ "$idx" -lt "$numrepos" ] ; do
 						for path in $SRCDIR/$pkgtype/* ; do 
 							[ -d "${path}" ] || continue
 							dirname="$(basename "${path}")"
+							media $path
 							symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/$pkgtype/$dirname"
 						done;
 						if [ -f "$SRCDIR/$pkgtype/pkg_${REPOS[$idx]}.xml" ] ; then
@@ -241,6 +255,7 @@ while [ "$idx" -lt "$numrepos" ] ; do
 						for path in $SRCDIR/$pkgtype/* ; do 
 							[ -d "${path}" ] || continue
 							dirname="$(basename "${path}")"
+							media $path
 							symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/modules/$dirname"
 						done
 						;;
