@@ -97,7 +97,14 @@ symlinker() {
 # Note that this is only necessary for properly packaged repositories!
 media() {
 	local path=$1
-	dirname="$(basename "${path}")"
+	local dirname=''
+
+	if [ ! -z $2 ]; then
+		dirname=$2
+		debugln "Optional dirname entered $2"
+	else
+		dirname="$(basename "${path}")"
+	fi
 
 	if [ -d "$path/media/$dirname" ]; then
 		symlinker "$path/media/$dirname" "$WD/media/$dirname"
@@ -220,9 +227,11 @@ while [ "$idx" -lt "$numrepos" ] ; do
 								symlinker "$SRCDIR/$pkgtype/$dirname.xml" "$WD/administrator/components/$dirname/$dirname.xml"
 							fi
 						done;
+	#debugln "WOEF $SRCDIR/$pkgtype" "com_${REPOS[$idx]}"
+
+						media "$SRCDIR/$pkgtype" "com_${REPOS[$idx]}"
 						for path in $SRCDIR/$pkgtype/components/* ; do 
 							[ -d "${path}" ] || continue
-							media $path
 							dirname="$(basename "${path}")"
 							symlinker "$SRCDIR/$pkgtype/components/$dirname" "$WD/components/$dirname"
 						done;
