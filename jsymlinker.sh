@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Read a composer.json file, parse the dependencies and create correct symlinks in the current project folder
-# Obviously, this file needs to be run from a web project root directory. There MUST be a composer.json file.
-# This currently only works for Joomla! projects.
+# Obviously, this file needs to be run from a Joomla! project root directory. There MUST be a composer.json file.
+# See https://github.com/derjoachim/moyo-git-tools for the most recent version
 
 # Variables. Please tweak as necessary
 
@@ -14,9 +14,10 @@ PROJECTS=()
 REPOS=()
 FLUSH_ALL_SYMLINKS=0
 FORCE_ALL=0
-PKG_TYPES=(component libraries media modules plugin plugins)
+PKG_TYPES=(component components libraries media modules plugin plugins)
 SUBDIR_TYPES=(components media modules)
 FLUSH_SUBDIRS=(administrator components libraries media modules plugins)
+
 #
 # Setting parameters.
 #
@@ -94,21 +95,50 @@ symlinker() {
 
 #
 # #7: Within installable Joomla packages, certain package types contain a media subdirectory. Make sure that these are properly symlinked as well
-# Note that this is only necessary for properly packaged repositories!
-media() {
+# Note that this is only necessary for properly packaged repositories! @TODO: Refactor! Probably not needed as a function anymore.
+
+lnmedia() {
 	local path=$1
-	local dirname=''
-
-	if [ ! -z $2 ]; then
-		dirname=$2
-	else
-		dirname="$(basename "${path}")"
-	fi
-
+	local dirname="$(basename "${path}")"
 	if [ -d "$path/media/$dirname" ]; then
 		symlinker "$path/media/$dirname" "$WD/media/$dirname"
 	fi
 }
+
+# #7-ish. Within a package, it is possible, but not obligatory to iterate through components. This function links components.
+lncomponent() {
+	local comppath=$1
+
+	# /administrator/components
+	for path in $comppath/administrator/components/* ; do 
+		[ -d "${path}" ] || continue
+
+		dirname="$(basename "${path}")"
+		symlinker "$comppath/administrator/components/$dirname" "$WD/administrator/components/$dirname"
+
+		# Do not forget the .xml files.
+		if [ -f  "$comppath/$dirname.xml" ]; then
+			symlinker "$comppath/$dirname.xml" "$WD/administrator/components/$dirname/$dirname.xml"
+		fi
+	done;
+
+	# /media
+	for path in $comppath/media/* ; do
+		dirname="$(basename "${path}")"
+		symlinker "$comppath/media/$dirname" "$WD/media/$dirname"
+	done;
+	
+	# /components
+	for path in $comppath/components/* ; do 
+		[ -d "${path}" ] || continue
+		dirname="$(basename "${path}")"
+		symlinker "$comppath/components/$dirname" "$WD/components/$dirname"
+	done;
+}
+
+#
+# End function declarations
+#
 
 # First, let us run some tests. 
 # 1. Is there a composer.json file in the current directory?
@@ -185,9 +215,6 @@ if [ $FLUSH_ALL_SYMLINKS -eq 1 ] ; then
 	for subdir in ${FLUSH_SUBDIRS[@]} ; do
 		debugln "Flushing subdirectory $WD/$subdir"
 		cd $WD/$subdir
-		if [ $VERBOSITY -eq 1 ]; then
-			find . -type l -print
-		fi
 
 		find . -type l -delete
 	done
@@ -196,7 +223,7 @@ fi
 
 if [ $VERBOSITY -eq 1 ]; then
 	debugln "Finding dead symlinks."
-	find . -type l -exec test ! -e {} \; -print
+	#find . -type l -exec test ! -e {} \; -print
 fi
 
 find . -type l -exec test ! -e {} \; -delete
@@ -205,9 +232,7 @@ find . -type l -exec test ! -e {} \; -delete
 # If not, either give a warning or force new symlinks.
 idx=0
 while [ "$idx" -lt "$numrepos" ] ; do
-	# Sometimes a repo is a package (e.g. a module and a component)
 	SRCDIR="$PROJECT_DIR/${PROJECTS[$idx]}/${REPOS[$idx]}"
-
 	if [ -d $PROJECT_DIR/${PROJECTS[$idx]}/${REPOS[$idx]}/packages ] ; then
 		SRCDIR+="/packages"
 		echo -e "${PROJECTS[$idx]} - \033[32m${REPOS[$idx]}\033[0m \033[33mPackages subdirectory found\033[0m."
@@ -215,34 +240,23 @@ while [ "$idx" -lt "$numrepos" ] ; do
 			if [ -d "$SRCDIR/$pkgtype" ] ; then
 				case $pkgtype in
 					"component")
-						debugln "\033[1mComponent\033[0m found in $SRCDIR/$pkgtype/"
-						for path in $SRCDIR/$pkgtype/administrator/components/* ; do 
+						debugln "\033[1mSingular component\033[0m found in $SRCDIR/$pkgtype/"
+						lncomponent $SRCDIR/$pkgtype
+						;;
+					"components")
+						debugln "\033[1mMultiple components\033[0m found in $SRCDIR/$pkgtype/"
+						for path in $SRCDIR/$pkgtype/*; do
 							[ -d "${path}" ] || continue
-							dirname="$(basename "${path}")"
-							symlinker "$SRCDIR/$pkgtype/administrator/components/$dirname" "$WD/administrator/components/$dirname"
-
-							# Do not forget the .xml files
-							if [ -f  "$SRCDIR/$pkgtype/$dirname.xml" ] ; then
-								symlinker "$SRCDIR/$pkgtype/$dirname.xml" "$WD/administrator/components/$dirname/$dirname.xml"
-							fi
+							debugln "Trying to create symlinks for component within $path"
+							lncomponent $path
 						done;
-
-						media "$SRCDIR/$pkgtype" "com_${REPOS[$idx]}"
-						for path in $SRCDIR/$pkgtype/components/* ; do 
-							[ -d "${path}" ] || continue
-							dirname="$(basename "${path}")"
-							symlinker "$SRCDIR/$pkgtype/components/$dirname" "$WD/components/$dirname"
-						done;
-						if [ -f "$SRCDIR/$pkgtype/${REPOS[$idx]}.xml" ] ; then
-							symlinker "$SRCDIR/$pkgtype/${REPOS[$idx]}.xml" "$WD/administrator/components/com_${REPOS[$idx]}/${REPOS[$idx]}.xml"
-						fi
 						;;
 					"libraries")
 						debugln "\033[1mLibraries\033[0m found in $SRCDIR/$pkgtype/"
 						for path in $SRCDIR/$pkgtype/* ; do 
 							[ -d "${path}" ] || continue
 							dirname="$(basename "${path}")"
-							media $path
+							lnmedia $path
 							symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/$pkgtype/$dirname"
 						done;
 						if [ -f "$SRCDIR/$pkgtype/pkg_${REPOS[$idx]}.xml" ] ; then
@@ -262,7 +276,7 @@ while [ "$idx" -lt "$numrepos" ] ; do
 						for path in $SRCDIR/$pkgtype/* ; do 
 							[ -d "${path}" ] || continue
 							dirname="$(basename "${path}")"
-							media $path
+							lnmedia $path
 							symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/modules/$dirname"
 						done
 						;;
@@ -275,8 +289,6 @@ while [ "$idx" -lt "$numrepos" ] ; do
 						;;
 					"plugins")
 						debugln "\033[1mPlugins new style \033[0m found in $SRCDIR/$pkgtype/"
-						# In the new repo structure, more than one plugins can be used. 
-						# Therefore, we need to iterate through subdirectories
 						for path in $SRCDIR/$pkgtype/* ; do 
 							[ -d "${path}" ] || continue
 							dirname="$(basename "${path}")"
@@ -297,35 +309,9 @@ while [ "$idx" -lt "$numrepos" ] ; do
 			symlinker "$SRCDIR/pkg_${REPOS[$idx]}.xml" "$WD/administrator/manifests/packages/pkg_${REPOS[$idx]}.xml"
 		fi
 	else
-		# We're currently in a single component or module. Do the symlink thingy
-		# Not very DRY, but it'll do for the moment.
-		echo -e "${PROJECTS[$idx]} - \033[32m${REPOS[$idx]}\033[0m \033[33mComponent not in package.\033[0m."
-
-		# administrator/components
-		if [ -d "$SRCDIR/administrator/components" ] ; then
-			debugln "\033[1mAdministrator\033[0m found in $SRCDIR/"
-			for path in $SRCDIR/administrator/components/* ; do 
-				[ -d "${path}" ] || continue
-				dirname="$(basename "${path}")"
-				symlinker "$SRCDIR/administrator/components/$dirname" "$WD/administrator/components/$dirname"
-
-				# Do not forget the .xml files
-				if [ -f  "$SRCDIR/$dirname.xml" ] ; then
-					symlinker "$SRCDIR/$dirname.xml" "$WD/administrator/components/$dirname/$dirname.xml"
-				fi
-			done
-		fi
-		# The rest is somewhat easier
-		for pkgtype in ${SUBDIR_TYPES[@]} ; do
-			if [ -d "$SRCDIR/$pkgtype" ] ; then
-				debugln "\033[1m$pkgtype\033[0m found in $SRCDIR/$pkgtype/"
-				for path in $SRCDIR/$pkgtype/* ; do 
-					[ -d "${path}" ] || continue
-					dirname="$(basename "${path}")"
-					symlinker "$SRCDIR/$pkgtype/$dirname" "$WD/$pkgtype/$dirname"
-				done
-			fi
-		done
+		# We're currently in a single component or module. As of version 1.1, this is prohibited. An error is to be given and exit code 1 (error) is to be returned.
+		echo -e "Error in repository: ${PROJECTS[$idx]} - \033[32m${REPOS[$idx]}\033[0m \033[33mComponent not in package.\033[0m."
+		exit 1
 	fi
 	debugln "---"
 
