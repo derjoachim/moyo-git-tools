@@ -200,9 +200,8 @@ while [ "$idx" -lt "$numrepos" ] ; do
 		git clone ${ALLREPOS[$idx]} ${REPOS[$idx]}
 	else
 		debugln "Repository \033[1m${REPOS[$idx]}\033[0m found."
-
-		#@TODO Automatic checkout of desired branch? Worth a discussion
 	fi
+	#@TODO Automatic checkout of desired branch? Worth a discussion
 
 	cd ..
 	let "idx=$idx+1"
