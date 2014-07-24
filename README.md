@@ -42,7 +42,7 @@ Nooku Server project, again while being to distinguish among revisions and tags.
 **1.1.0** Better support for Joomla package structure. A package can now contain multiple components, plugins and modules.
 Also, media folder are being symlinked from the proper positions.
 
-**1.2.0** Support for branching in the mass pull script. 
+**1.2.0** Support for branching in the mass pull script.
 
 # Notes
 
