@@ -31,7 +31,7 @@ do
 		n) echo "--- Dry run activated.---";AUTO_PULL=0;;
 		p) SHARED_REPO_NAME="$OPTARG"; echo "--- Shared repository $SHARED_REPO_NAME selected ---";;
 		v) echo "--- Verbosity mode on. You asked for it. ---";VERBOSITY=1;;
-    	\?) echo >&2 "usage: $0 [-a] [-b branch] [-h] [-p project] [-v]";exit 1;;
+    	\?) echo >&2 "usage: $0 [-b branch] [-h] [-n] [-p project] [-v]";exit 1;;
 	esac
 done
 
