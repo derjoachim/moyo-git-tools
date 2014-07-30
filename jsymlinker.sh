@@ -175,8 +175,21 @@ while IFS= read -r line; do
 		URL=$(echo $line | cut -d \" -f 6)
 	fi
 	ALLREPOS+=($URL)
+	GITHOST="$(echo $URL | cut -d \/ -f 3)"
 	PROJECTS+=("$(echo $URL | cut -d \/ -f 4 | cut -d \. -f 1)")
-	REPOS+=("$(echo $URL | cut -d \/ -f 4 | cut -d \. -f 2)")
+	case $GITHOST in
+		"git.assembla.com")
+			# https://git.assembla.com/moyo-content.cloudinary.git -> ok
+			REPOS+=("$(echo $URL | cut -d \/ -f 4 | cut -d \. -f 2)")
+			;;
+		"github.com")
+			# https://github.com/cta-int/terms.git -> 
+			REPOS+=("$(echo $URL | cut -d \/ -f 5 | cut -d \. -f 1)")
+			;;
+		*)
+			echo "\033[1mZoinks\033[0m! $GITHOST is not supported"
+			;;
+	esac;
 done <<< "$(cat composer.json | JSON.sh -b | egrep '\"url\"\]')"
 
 debugln  "${#ALLREPOS[@]} repositories to be parsed."
@@ -191,12 +204,11 @@ while [ "$idx" -lt "$numrepos" ] ; do
 		echo -e "Creating project directory  \033[32m${PROJECTS[$idx]}\033[0m."
 		mkdir ${PROJECTS[$idx]}
 	fi
-
 	cd  ${PROJECTS[$idx]}
 	if [ ! -d ${REPOS[$idx]} ] ; then
 		echo -e "Creating repository directory  \033[32m${REPOS[$idx]}\033[0m."
 		mkdir  ${REPOS[$idx]}
-		echo -e "Cloning new repository \033[33m${ALLREPOS[$idx]}\033[0m."
+		echo -e "Cloning new repository \033[33m${ALLREPOS[$idx]}\033[0m into \033[33m${REPOS[$idx]}\033[0m."
 		git clone ${ALLREPOS[$idx]} ${REPOS[$idx]}
 	else
 		debugln "Repository \033[1m${REPOS[$idx]}\033[0m found."
@@ -220,11 +232,7 @@ if [ $FLUSH_ALL_SYMLINKS -eq 1 ] ; then
 	# Find and remove symlinks within said subdirectories
 fi
 
-if [ $VERBOSITY -eq 1 ]; then
-	debugln "Finding dead symlinks."
-	#find . -type l -exec test ! -e {} \; -print
-fi
-
+debugln "Finding dead symlinks."
 find . -type l -exec test ! -e {} \; -delete
 
 # Fifth step: check whether actually symlinked.
