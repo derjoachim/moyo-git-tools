@@ -117,9 +117,9 @@ lncomponent() {
 		symlinker "$comppath/administrator/components/$dirname" "$WD/administrator/components/$dirname"
 
 		# Do not forget the .xml files.
-		if [ -f  "$comppath/$dirname.xml" ]; then
-			symlinker "$comppath/$dirname.xml" "$WD/administrator/components/$dirname/$dirname.xml"
-		fi
+		#if [ -f  "$comppath/$dirname.xml" ]; then
+		#	symlinker "$comppath/$dirname.xml" "$WD/administrator/components/$dirname/$dirname.xml"
+		#fi
 	done;
 
 	# /media
@@ -183,7 +183,7 @@ while IFS= read -r line; do
 			REPOS+=("$(echo $URL | cut -d \/ -f 4 | cut -d \. -f 2)")
 			;;
 		"github.com")
-			# https://github.com/cta-int/terms.git -> 
+			# https://github.com/cta-int/terms.git ->  ok
 			REPOS+=("$(echo $URL | cut -d \/ -f 5 | cut -d \. -f 1)")
 			;;
 		*)
