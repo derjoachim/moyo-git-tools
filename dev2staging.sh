@@ -56,6 +56,12 @@ if [ $KEEP_ORPHANS -eq 0 ] ; then
 	RSYNCOPT+=" --delete"
 fi
 
+# #9 Make sure that staging is in develop branch.
+echo "Making sure that $DEST is currently in develop branch..."
+cd $DEST
+git checkout develop
+cd ..
+
 echo "Removing pesky .DS_Store files."
 find . -name *.DS_Store -type f -delete
 
