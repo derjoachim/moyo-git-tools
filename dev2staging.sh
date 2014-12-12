@@ -18,7 +18,8 @@
 SRC="development"
 DEST="staging"
 
-RSYNCOPT="-aLrtv"
+#RSYNCOPT="-aLrtv" # With symlinks
+RSYNCOPT="-rvptgoD" # Without symlinks
 DRY_RUN=0
 KEEP_ORPHANS=0
 
@@ -65,4 +66,4 @@ cd ..
 echo "Removing pesky .DS_Store files."
 find . -name *.DS_Store -type f -delete
 
-rsync $RSYNCOPT --delete --exclude='.git' --exclude='/.idea' --exclude='/.gitignore' --exclude='/copy.sh' --exclude='/symlinker.sh' --exclude='/configuration.php' --exclude='/composer.lock' --exclude='/administrator/cache' --exclude='/joomlatools-files' --exclude='/cache' --exclude='/logs' --exclude='/images' --exclude='/tmp' --exclude='/vendor' $SRC/ $DEST/
+rsync $RSYNCOPT --delete --exclude='.git' --exclude='php_errors.log' --exclude='administrator/php_errors.log' --exclude='/.idea' --exclude='/.gitignore' --exclude='/copy.sh' --exclude='/symlinker.sh' --exclude='/configuration.php' --exclude='/composer.lock' --exclude='/administrator/cache' --exclude='/joomlatools-files' --exclude='/cache' --exclude='/logs' --exclude='/images' --exclude='/tmp' --exclude='/vendor' $SRC/ $DEST/
