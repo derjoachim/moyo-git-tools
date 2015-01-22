@@ -62,31 +62,31 @@ symlinker() {
 
 	# First, try to force deletion of existing symlinks, files or directories
 	if [ $FORCE_ALL -eq 1 ] ; then
-		if [ -d $dest ] ; then
+		if [ -d "$dest" ] ; then
 			debugln "Removing destination directory $dest"
 			rm -rf $dest
-		elif [ -L $dest ] ; then
+		elif [ -L "$dest" ] ; then
 			debugln "Removing symlink $dest"
 			rm -f $dest
-		elif [ -f $dest ] ; then
+		elif [ -f "$dest" ] ; then
 			debugln "Removing regular file $dest"
 			rm -f $dest
 		fi
 	fi
 	if [[ -d $src  && ! -L $dest ]] ; then
 		# If SRC is a directory...
-		if [ -d $dest ] ; then
+		if [ -d "$dest" ] ; then
 			# Destination is a directory, thus is part of the main project. A warning should be given, because the developer is possibly working in the wrong repository.
 			echo -e "\033[31mWarning\033[0m: The subdirectory $dest appears to be part of the main project. Please fix manually."
-		elif [ ! -L  $dest ] ; then
+		elif [ ! -L  "$dest" ] ; then
 			debugln "Trying to symlink directory $src to $dest"
 			ln -sf "$src" "$dest"
 		fi
 	elif [[ -f $src && ! -L $dest ]] ; then
 		# If SRC is a file...
-		if [ -f $dest ] ; then
+		if [ -f "$dest" ] ; then
 			echo -e "\033[31mWarning\033[0m: The file $dest appears to be part of the main project. Please fix manually."
-		elif [ ! -L $dest ] ; then
+		elif [ ! -L "$dest" ] ; then
 			debugln "Trying to symlink file $src to $dest"
 			ln -sf "$src" "$dest"
 		fi
