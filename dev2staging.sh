@@ -18,24 +18,27 @@
 SRC="development"
 DEST="staging"
 
-#RSYNCOPT="-aLrtv" # With symlinks
 RSYNCOPT="-rvptgoD" # Without symlinks
 DRY_RUN=0
 KEEP_ORPHANS=0
 
-while getopts hnk opt
+while getopts d:hnks: opt
 do
     case "$opt" in
+		d) DEST="$OPTARG";echo "-- Destination override to $DEST --";;
     	h)  
 		echo "Sync development and staging subdirectories. Why no branches? Because fuck you!"
 		echo
+	  	echo "d : Override destination subdirectory."
 	  	echo "h : Print this helpful message."
 	  	echo "n : Chicken mode. Dry-run is activated, no files are being overwritten."
 	  	echo "k : Keep files that would be deleted."
+	  	echo "s : Override source subdirectory."
 		exit 0;;
 		n) echo "--- Chicken mode on. No files are being overwritten. ---";DRY_RUN=1;;
 		k) echo "--- Orphan rescue mode on. No orphaned files are being deleted ---";KEEP_ORPHANS=1;;
-    	\?) echo >&2 "usage: $0 [-h] [-n] [-k]";exit 1;;
+		s) SRC="$OPTARG";echo "-- Source override to $SRC --";;
+    	\?) echo >&2 "usage: $0 [-d destination_dir] [-h] [-n] [-k] [-s src_dir]";exit 1;;
 	esac
 done
 
